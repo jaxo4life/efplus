@@ -46,19 +46,18 @@
       return
     }
 
-    // 获取关注者数据
-    const apiUrl = `https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=300`
-
-    const response = await fetch(apiUrl)
-
-    if (!response.ok) {
-      throw new Error("获取关注者数据失败，状态码: " + response.status)
-    }
-
-    const data = await response.json()    
-    // 渲染可视化
-    renderSocialGraph(canvas, address, data.followers || [], { ensName, avatarUrl })
-
+    fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=300`)
+      .then(res => {
+        if (!res.ok) throw new Error("API 请求失败")
+        return res.json()
+      })
+      .then(data => {
+        const followers = data.followers || []
+        renderSocialGraph(canvas, address, followers, { ensName, avatarUrl })
+      })
+      .catch(err => {
+        showError("图谱加载失败：" + err.message)
+      })
 
     function showError(msg) {
       document.getElementById("error").innerText = msg
