@@ -64,7 +64,7 @@
       document.getElementById("error").style.display = "block"
     }
 
-	// 渲染社交图谱可视化
+	  // 渲染社交图谱可视化
 	  function renderSocialGraph(canvas, centralAddress, followers, userInfo) {  
 		const ctx = canvas.getContext("2d")
 		const width = canvas.width
@@ -94,14 +94,11 @@
 			avatarLoaded = true
 			// 头像加载完成后重绘中心节点
 			drawCenterNode()
-			animate()
 		  }
 		  avatarImage.onerror = () => {
 			drawCenterNode()
-			animate()
 		  }
 		  avatarImage.src = userInfo.avatarUrl
-		  animate()
 		}
 		
 		let rotationAngle = 0  // 全局变量
@@ -250,6 +247,38 @@
 
 		// 开始动画
 		animate()
+	  }
+	  
+	  // 辅助函数：星星闪烁
+		function hexToRgba(hex, alpha) {
+		  const bigint = parseInt(hex.replace("#", ""), 16)
+		  const r = (bigint >> 16) & 255
+		  const g = (bigint >> 8) & 255
+		  const b = bigint & 255
+		  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+		}
+
+	  // 辅助函数：缩短以太坊地址
+	  function shortenAddress(address) {
+		if (!address) return ""
+		return address.substring(0, 6) + "..." + address.substring(address.length - 4)
+	  }
+
+	  // 辅助函数：生成随机颜色
+	  function getRandomColor() {
+		const colors = [
+		  "#FF6B6B",
+		  "#4ECDC4",
+		  "#FFD166",
+		  "#06D6A0",
+		  "#118AB2",
+		  "#EF476F",
+		  "#FFC43D",
+		  "#1B9AAA",
+		  "#6A4C93",
+		  "#F72585",
+		]
+		return colors[Math.floor(Math.random() * colors.length)]
 	  }
 	})()
   </script>
