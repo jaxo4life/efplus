@@ -94,11 +94,14 @@
 			avatarLoaded = true
 			// 头像加载完成后重绘中心节点
 			drawCenterNode()
+			animate()
 		  }
 		  avatarImage.onerror = () => {
 			drawCenterNode()
+			animate()
 		  }
 		  avatarImage.src = userInfo.avatarUrl
+		  animate()
 		}
 		
 		let rotationAngle = 0  // 全局变量
