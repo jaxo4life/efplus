@@ -46,18 +46,19 @@
       return
     }
 
-    fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=300`)
-      .then(res => {
-        if (!res.ok) throw new Error("API 请求失败")
-        return res.json()
-      })
-      .then(data => {
-        const followers = data.followers || []
-        renderSocialGraph(canvas, address, followers, { ensName, avatarUrl })
-      })
-      .catch(err => {
-        showError("图谱加载失败：" + err.message)
-      })
+    // 获取关注者数据
+    const apiUrl = `https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=300`
+
+    const response = await fetch(apiUrl)
+
+    if (!response.ok) {
+      throw new Error("获取关注者数据失败，状态码: " + response.status)
+    }
+
+    const data = await response.json()    
+    // 渲染可视化
+    renderSocialGraph(canvas, address, data.followers || [], { ensName, avatarUrl })
+
 
     function showError(msg) {
       document.getElementById("error").innerText = msg
@@ -94,11 +95,9 @@
 			avatarLoaded = true
 			// 头像加载完成后重绘中心节点
 			drawCenterNode()
-			animate() // ✅ 动画启动
 		  }
 		  avatarImage.onerror = () => {
 			drawCenterNode()
-			animate() // ✅ 动画启动
 		  }
 		  avatarImage.src = userInfo.avatarUrl
 		}
@@ -186,8 +185,6 @@
 
 		// 动画函数
 		function animate() {
-			console.log("stars.length:", stars.length)
-
 		  // 每帧递增旋转角度（如果你未来想让中心节点旋转）
 		  rotationAngle += 0.005
 
