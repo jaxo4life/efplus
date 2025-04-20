@@ -167,8 +167,8 @@
 		followers.slice(0, 2000).forEach((follower, index) => {
 		  const angle = Math.random() * Math.PI * 2
 		  const minRadius = 60
-		  const radiusStep = 1.8 // 每个 follower 间隔多少距离
-		  const jitter = (Math.random() - 0.5) * 5 // [-2.5, +2.5] 范围抖动
+		  const radiusStep = 0.8 // 每个 follower 间隔多少距离
+		  const jitter = (Math.random() - 0.5) * 2 // [-1, +1] 范围抖动
 		  const radius = minRadius + index * radiusStep + jitter
 		  const angularSpeed = 0.002 + Math.random() * 0.003 // 控制旋转速度
 
