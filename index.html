@@ -53,6 +53,7 @@
       })
       .then(data => {
         const followers = data.followers || []
+	console.log(followers)
         renderSocialGraph(canvas, address, followers, { ensName, avatarUrl })
       })
       .catch(err => {
