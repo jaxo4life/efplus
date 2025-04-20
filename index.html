@@ -53,7 +53,6 @@
       })
       .then(data => {
         const followers = data.followers || []
-	console.log(followers)
         renderSocialGraph(canvas, address, followers, { ensName, avatarUrl })
       })
       .catch(err => {
@@ -95,9 +94,11 @@
 			avatarLoaded = true
 			// 头像加载完成后重绘中心节点
 			drawCenterNode()
+			animate() // ✅ 动画启动
 		  }
 		  avatarImage.onerror = () => {
 			drawCenterNode()
+			animate() // ✅ 动画启动
 		  }
 		  avatarImage.src = userInfo.avatarUrl
 		}
