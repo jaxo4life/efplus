@@ -45,7 +45,7 @@
       return
     }
 
-    fetch(`https://api.ethfollow.xyz/api/v1/users/${address}/followers?sort=followers&limit=100`)
+    fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=100`)
       .then(res => {
         if (!res.ok) throw new Error("API 请求失败")
         return res.json()
