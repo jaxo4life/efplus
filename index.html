@@ -54,7 +54,10 @@
 	const ensName = data.ens.name || data.address
         const avatarUrl = data.ens.avatar
       })
-
+      .catch(err => {
+        showError("图谱加载失败：" + err.message)
+      })
+	   
     fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=2000`)
       .then(res => {
         if (!res.ok) throw new Error("API 请求失败")
