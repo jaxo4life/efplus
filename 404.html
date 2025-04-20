@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>全屏社交图谱</title>
+  <title>EFPlus Graph</title>
   <style>
     html, body {
       margin: 0;
@@ -46,7 +46,7 @@
       return
     }
 
-    fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=300`)
+    fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=500`)
       .then(res => {
         if (!res.ok) throw new Error("API 请求失败")
         return res.json()
@@ -164,7 +164,7 @@
 		const stars = []
 
 		// 流星轨道
-		followers.slice(0, 300).forEach((follower, index) => {
+		followers.slice(0, 500).forEach((follower, index) => {
 		  const angle = Math.random() * Math.PI * 2
 		  const minRadius = 60
 		  const radiusStep = 1.8 // 每个 follower 间隔多少距离
