@@ -56,7 +56,18 @@
      <button id="startButton" onclick="startVisualization()">BOMBOM</button>
    </div>
    <canvas id="efp-social-graph-canvas"></canvas>
-   <div id="error"></div>
+   <div id="loading" style="
+     position: absolute;
+     top: 50%;
+     left: 50%;
+     transform: translate(-50%, -50%);
+     color: white;
+     font-family: sans-serif;
+     font-size: 20px;
+     z-index: 10;
+   ">
+     Loading...
+   </div>
    <div id="error" style="display: none;"></div>
  
    <script>
@@ -107,6 +118,7 @@
          }
  
          document.getElementById("error").style.display = "none"
+         document.getElementById("loading").style.display = "block" // 显示 loading
  
          // 获取 ENS 名称与头像
          fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/details`)
@@ -126,9 +138,13 @@
                .then(data => {
                  const followers = data.followers || []
                  renderSocialGraph(canvas, address, followers, { ensName, avatarUrl })
+                 // ✅ 数据加载成功，隐藏 loading
+                 document.getElementById("loading").style.display = "none"
                })
            })
            .catch(err => {
+             // ❌ 出错时隐藏 loading
+             document.getElementById("loading").style.display = "none"            
              showError("Failed to load：" + err.message)
            })
        }
