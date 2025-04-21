@@ -52,8 +52,8 @@
 </head>
 <body>
   <div id="control-panel">
-    <input type="text" id="addressInput" placeholder="输入以太坊地址 (0x...)" />
-    <button id="startButton" onclick="startVisualization()">加载图谱</button>
+    <input type="text" id="addressInput" placeholder="Input EFP Listid" />
+    <button id="startButton" onclick="startVisualization()">BOMBOM</button>
   </div>
   <canvas id="efp-social-graph-canvas"></canvas>
   <div id="error"></div>
@@ -99,9 +99,9 @@
 
       // 挂载到 window 供按钮使用
       window.startVisualization = function () {
-        const address = document.getElementById("addressInput").value.trim()
-        if (!address || !address.startsWith("0x")) {
-          showError("请输入有效的以太坊地址")
+        const address = document.getElementById("listIdInput").value.trim()
+        if (!/^\d+$/.test(address)) {
+          showError("请输入有效的 List ID（纯数字）")
           return
         }
 
