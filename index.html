@@ -38,26 +38,14 @@
 
     const params = new URLSearchParams(location.search)
     const address = params.get("address")
-    
+    const ensName = params.get("ens")
+    const avatarUrl = params.get("avatar")
 
     if (!address) {
       showError("地址未提供")
       return
     }
 
-    fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/details`)
-      .then(res => {
-	if (!res.ok) throw new Error("No list found")
-        return res.json()
-      })
-      .then(data => {
-	const ensName = data.ens.name || data.address
-        const avatarUrl = data.ens.avatar
-      })
-      .catch(err => {
-        showError("图谱加载失败：" + err.message)
-      })
-	   
     fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=2000`)
       .then(res => {
         if (!res.ok) throw new Error("API 请求失败")
