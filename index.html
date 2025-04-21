@@ -13,314 +13,260 @@
     canvas {
       display: block;
     }
+    #control-panel {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px;
+      border-radius: 10px;
+    }
+    #addressInput {
+      width: 300px;
+      padding: 6px;
+      border-radius: 6px;
+      border: none;
+    }
+    #startButton {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      margin-left: 6px;
+      cursor: pointer;
+      background: #4ECDC4;
+      color: black;
+      font-weight: bold;
+    }
     #error {
       color: white;
       font-family: sans-serif;
       padding: 20px;
-    }
-    #search-container {
+      display: none;
       position: absolute;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
+      top: 80px;
+      left: 20px;
       z-index: 10;
-    }
-    #search-container input {
-      padding: 8px 12px;
-      font-size: 14px;
-      width: 300px;
-      border-radius: 4px;
-      border: none;
-      outline: none;
-    }
-    #search-container button {
-      padding: 8px 16px;
-      margin-left: 8px;
-      font-size: 14px;
-      border-radius: 4px;
-      border: none;
-      background-color: #06D6A0;
-      color: black;
-      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div id="search-container">
-    <input type="text" id="addressInput" placeholder="请输入以太坊地址（0x...）" />
-    <button onclick="startVisualization()">开始绘图</button>
-  </div>	
-	
+  <div id="control-panel">
+    <input type="text" id="addressInput" placeholder="输入以太坊地址 (0x...)" />
+    <button id="startButton" onclick="startVisualization()">加载图谱</button>
+  </div>
   <canvas id="efp-social-graph-canvas"></canvas>
-  <div id="error" style="display: none;"></div>
+  <div id="error"></div>
 
   <script>
-   (function () {
-    const canvas = document.getElementById("efp-social-graph-canvas")
-    const ctx = canvas.getContext("2d")
+    (function () {
+      const canvas = document.getElementById("efp-social-graph-canvas")
+      const ctx = canvas.getContext("2d")
 
-    function resizeCanvas() {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
-    window.addEventListener("resize", resizeCanvas)
-    resizeCanvas()
+      function resizeCanvas() {
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+      }
+      window.addEventListener("resize", resizeCanvas)
+      resizeCanvas()
 
-    function startVisualization() {
-      const address = document.getElementById("addressInput").value.trim()
-      if (!address || !address.startsWith("0x")) {
-        showError("请输入有效的以太坊地址")
-        return
+      function showError(msg) {
+        const errorDiv = document.getElementById("error")
+        errorDiv.innerText = msg
+        errorDiv.style.display = "block"
       }
 
-      document.getElementById("error").style.display = "none"
+      function shortenAddress(address) {
+        if (!address) return ""
+        return address.substring(0, 6) + "..." + address.substring(address.length - 4)
+      }
 
-      // 获取 ENS 和头像
-      fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/details`)
-        .then(res => {
-          if (!res.ok) throw new Error("ENS信息请求失败")
-          return res.json()
+      function getRandomColor() {
+        const colors = [
+          "#FF6B6B", "#4ECDC4", "#FFD166", "#06D6A0", "#118AB2",
+          "#EF476F", "#FFC43D", "#1B9AAA", "#6A4C93", "#F72585",
+        ]
+        return colors[Math.floor(Math.random() * colors.length)]
+      }
+
+      function hexToRgba(hex, alpha) {
+        const bigint = parseInt(hex.replace("#", ""), 16)
+        const r = (bigint >> 16) & 255
+        const g = (bigint >> 8) & 255
+        const b = bigint & 255
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`
+      }
+
+      // 挂载到 window 供按钮使用
+      window.startVisualization = function () {
+        const address = document.getElementById("addressInput").value.trim()
+        if (!address || !address.startsWith("0x")) {
+          showError("请输入有效的以太坊地址")
+          return
+        }
+
+        document.getElementById("error").style.display = "none"
+
+        // 获取 ENS 名称与头像
+        fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/details`)
+          .then(res => {
+            if (!res.ok) throw new Error("ENS信息请求失败")
+            return res.json()
+          })
+          .then(details => {
+            const ensName = details?.ens?.name || ""
+            const avatarUrl = details?.ens?.avatar || ""
+
+            return fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=2000`)
+              .then(res => {
+                if (!res.ok) throw new Error("关注者数据请求失败")
+                return res.json()
+              })
+              .then(data => {
+                const followers = data.followers || []
+                renderSocialGraph(canvas, address, followers, { ensName, avatarUrl })
+              })
+          })
+          .catch(err => {
+            showError("图谱加载失败：" + err.message)
+          })
+      }
+
+      function renderSocialGraph(canvas, centralAddress, followers, userInfo) {
+        const ctx = canvas.getContext("2d")
+        const width = canvas.width
+        const height = canvas.height
+        const centerX = width / 2
+        const centerY = height / 2
+
+        ctx.clearRect(0, 0, width, height)
+        ctx.fillStyle = "rgba(10, 10, 30, 0.8)"
+        ctx.fillRect(0, 0, width, height)
+
+        const avatarImage = new Image()
+        avatarImage.crossOrigin = "anonymous"
+        let avatarLoaded = false
+
+        if (userInfo.avatarUrl) {
+          avatarImage.onload = () => {
+            avatarLoaded = true
+            drawCenterNode()
+          }
+          avatarImage.onerror = () => {
+            drawCenterNode()
+          }
+          avatarImage.src = userInfo.avatarUrl
+        }
+
+        let rotationAngle = 0
+
+        function drawCenterNode() {
+          const centerNodeRadius = 40
+          ctx.save()
+          ctx.translate(centerX, centerY)
+          ctx.rotate(rotationAngle)
+          ctx.translate(-centerX, -centerY)
+
+          const pulseRadius = centerNodeRadius + 10 + Math.sin(Date.now() / 300) * 5
+
+          ctx.beginPath()
+          ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2)
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"
+          ctx.lineWidth = 2
+          ctx.stroke()
+
+          if (avatarLoaded) {
+            ctx.save()
+            ctx.beginPath()
+            ctx.arc(centerX, centerY, centerNodeRadius - 2, 0, Math.PI * 2)
+            ctx.clip()
+            ctx.drawImage(
+              avatarImage,
+              centerX - (centerNodeRadius - 2),
+              centerY - (centerNodeRadius - 2),
+              (centerNodeRadius - 2) * 2,
+              (centerNodeRadius - 2) * 2,
+            )
+            ctx.restore()
+          }
+
+          ctx.restore()
+
+          ctx.font = "bold 16px Arial"
+          ctx.fillStyle = "#ffffff"
+          ctx.textAlign = "center"
+          const displayName = userInfo.ensName || shortenAddress(centralAddress)
+          ctx.fillText(displayName, centerX, centerY + centerNodeRadius + 25)
+        }
+
+        drawCenterNode()
+
+        const stars = []
+
+        followers.slice(0, 2000).forEach((follower, index) => {
+          const angle = Math.random() * Math.PI * 2
+          const minRadius = 60
+          const radiusStep = 0.8
+          const jitter = (Math.random() - 0.5) * 2
+          const radius = minRadius + index * radiusStep + jitter
+          const angularSpeed = 0.002 + Math.random() * 0.003
+
+          stars.push({
+            follower,
+            angle,
+            radius,
+            angularSpeed,
+            size: Math.random() * 3 + 1.5,
+            color: getRandomColor(),
+          })
         })
-        .then(details => {
-          const ensName = details?.ens?.name || ""
-          const avatarUrl = details?.ens?.avatar || ""
 
-          return fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=2000`)
-            .then(res => {
-              if (!res.ok) throw new Error("关注者数据请求失败")
-              return res.json()
-            })
-            .then(data => {
-              const followers = data.followers || []
-              renderSocialGraph(canvas, address, followers, { ensName, avatarUrl })
-            })
-        })
-        .catch(err => {
-          showError("图谱加载失败：" + err.message)
-        })
-    }
+        function animate() {
+          rotationAngle += 0.005
+          ctx.clearRect(0, 0, width, height)
+          ctx.fillStyle = "rgba(10, 10, 30, 0.8)"
+          ctx.fillRect(0, 0, width, height)
 
-    function showError(msg) {
-      document.getElementById("error").innerText = msg
-      document.getElementById("error").style.display = "block"
-    }
-	  // 渲染社交图谱可视化
-	  function renderSocialGraph(canvas, centralAddress, followers, userInfo) {  
-		const ctx = canvas.getContext("2d")
-		const width = canvas.width
-		const height = canvas.height
+          stars.forEach((star, index) => {
+            star.angle += star.angularSpeed
+            const angle = star.angle
+            const x = centerX + Math.cos(angle) * star.radius
+            const y = centerY + Math.sin(angle) * star.radius
 
-		// 中心点坐标
-		const centerX = width / 2
-		const centerY = height / 2
+            const tailX = centerX + Math.cos(angle - 0.2) * star.radius
+            const tailY = centerY + Math.sin(angle - 0.2) * star.radius
 
-		// 清除画布
-		ctx.clearRect(0, 0, width, height)
+            const alpha = 0.6 + 0.4 * Math.sin(Date.now() / 200 + index)
 
-		// 绘制背景
-		ctx.fillStyle = "rgba(10, 10, 30, 0.8)"
-		ctx.fillRect(0, 0, width, height)
+            const trailGradient = ctx.createLinearGradient(x, y, tailX, tailY)
+            trailGradient.addColorStop(0, hexToRgba(star.color, alpha))
+            trailGradient.addColorStop(1, hexToRgba(star.color, 0))
 
-		// 预加载用户头像
-		const avatarImage = new Image()
-		avatarImage.crossOrigin = "anonymous" // 避免CORS问题
+            ctx.beginPath()
+            ctx.moveTo(x, y)
+            ctx.lineTo(tailX, tailY)
+            ctx.strokeStyle = trailGradient
+            ctx.lineWidth = star.size
+            ctx.stroke()
 
-		// 设置默认头像，以防加载失败
-		let avatarLoaded = false
+            ctx.beginPath()
+            ctx.arc(x, y, star.size, 0, Math.PI * 2)
+            ctx.fillStyle = hexToRgba(star.color, alpha)
+            ctx.fill()
 
-		// 如果有头像URL，则加载头像
-		if (userInfo.avatarUrl) {
-		  avatarImage.onload = () => {
-			avatarLoaded = true
-			// 头像加载完成后重绘中心节点
-			drawCenterNode()
-		  }
-		  avatarImage.onerror = () => {
-			drawCenterNode()
-		  }
-		  avatarImage.src = userInfo.avatarUrl
-		}
-		
-		let rotationAngle = 0  // 全局变量
+            ctx.font = star.radius < 350 ? "12px Arial" : "6px Arial"
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`
+            ctx.textAlign = "center"
+            ctx.fillText(star.follower.efp_list_nft_token_id, x, y - 10)
+          })
 
-		// 绘制中心节点的函数
-		function drawCenterNode() {
-		  // 中心节点半径增大
-		  const centerNodeRadius = 40
-		  
-		  // 保存原始状态
-		  ctx.save()
-		  
-		  // 平移到中心，然后旋转
-		  ctx.translate(centerX, centerY)
-		  ctx.rotate(rotationAngle)
-		  ctx.translate(-centerX, -centerY)
-		  
-		  const pulseRadius = centerNodeRadius + 10 + Math.sin(Date.now() / 300) * 5
+          drawCenterNode()
+          requestAnimationFrame(animate)
+        }
 
-		  // 绘制中心节点背景
-		  ctx.beginPath()
-		  ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2)
-		  ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"
-		  ctx.lineWidth = 2
-		  ctx.stroke()
-
-		  // 如果头像已加载，则绘制头像
-		  if (avatarLoaded) {
-			// 创建圆形裁剪区域
-			ctx.save()
-			ctx.beginPath()
-			ctx.arc(centerX, centerY, centerNodeRadius - 2, 0, Math.PI * 2)
-			ctx.clip()
-
-			// 绘制头像
-			ctx.drawImage(
-			  avatarImage,
-			  centerX - (centerNodeRadius - 2),
-			  centerY - (centerNodeRadius - 2),
-			  (centerNodeRadius - 2) * 2,
-			  (centerNodeRadius - 2) * 2,
-			)
-			ctx.restore()
-		  }
-		  
-		  // 恢复旋转状态
-		  ctx.restore()
-
-		  // 添加用户名称文本（使用ENS或地址）
-		  ctx.font = "bold 16px Arial"
-		  ctx.fillStyle = "#ffffff"
-		  ctx.textAlign = "center"
-
-		  // 优先使用ENS名称，如果没有则使用缩短的地址
-		  const displayName = userInfo.ensName || shortenAddress(centralAddress)
-		  ctx.fillText(displayName, centerX, centerY + centerNodeRadius + 25)
-		}
-
-		// 初始绘制中心节点
-		drawCenterNode()
-
-		// 初始化流星 - 从最左侧和最右侧向中心发射
-		const stars = []
-
-		// 流星轨道
-		followers.slice(0, 2000).forEach((follower, index) => {
-		  const angle = Math.random() * Math.PI * 2
-		  const minRadius = 60
-		  const radiusStep = 0.8 // 每个 follower 间隔多少距离
-		  const jitter = (Math.random() - 0.5) * 2 // [-1, +1] 范围抖动
-		  const radius = minRadius + index * radiusStep + jitter
-		  const angularSpeed = 0.002 + Math.random() * 0.003 // 控制旋转速度
-
-		  stars.push({
-			follower,
-			angle,
-			radius,
-			angularSpeed,
-			size: Math.random() * 3 + 1.5,
-			color: getRandomColor(),
-		  })
-		})
-
-		// 动画函数
-		function animate() {
-		  // 每帧递增旋转角度（如果你未来想让中心节点旋转）
-		  rotationAngle += 0.005
-
-		  // 清除画布
-		  ctx.clearRect(0, 0, width, height)
-
-		  // 绘制背景
-		  ctx.fillStyle = "rgba(10, 10, 30, 0.8)"
-		  ctx.fillRect(0, 0, width, height)
-
-		  // ==== 🌌 绘制每个环绕流星 ====
-		  stars.forEach((star, index) => {
-			star.angle += star.angularSpeed
-			const angle = star.angle
-			const x = centerX + Math.cos(angle) * star.radius
-			const y = centerY + Math.sin(angle) * star.radius
-
-			// ===== 🌟 尾巴轨迹（沿反方向拉出） =====
-			const tailX = centerX + Math.cos(angle - 0.2) * star.radius
-			const tailY = centerY + Math.sin(angle - 0.2) * star.radius
-
-			const alpha = 0.6 + 0.4 * Math.sin(Date.now() / 200 + index)
-
-			const trailGradient = ctx.createLinearGradient(x, y, tailX, tailY)
-			trailGradient.addColorStop(0, hexToRgba(star.color, alpha))
-			trailGradient.addColorStop(1, hexToRgba(star.color, 0))
-
-			ctx.beginPath()
-			ctx.moveTo(x, y)
-			ctx.lineTo(tailX, tailY)
-			ctx.strokeStyle = trailGradient
-			ctx.lineWidth = star.size
-			ctx.stroke()
-
-			// ==== ⭐ 星星主体 ====
-			ctx.beginPath()
-			ctx.arc(x, y, star.size, 0, Math.PI * 2)
-			ctx.fillStyle = hexToRgba(star.color, alpha)
-			ctx.fill()
-
-			// ==== 👤 名字标签靠近中心才显示 ====
-			if (star.radius < 350) {
-			  ctx.font = "12px Arial"
-			  ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`
-			  ctx.textAlign = "center"
-			  ctx.fillText(star.follower.efp_list_nft_token_id, x, y - 10)
-			} else {
-			  ctx.font = "6px Arial"
-			  ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`
-			  ctx.textAlign = "center"
-			  ctx.fillText(star.follower.efp_list_nft_token_id, x, y - 10)		  
-			}
-		  })
-
-		  // ==== 🪐 重绘中心节点 ====
-		  drawCenterNode()
-
-		  // 请求下一帧
-		  requestAnimationFrame(animate)
-		}
-
-		// 开始动画
-		animate()
-	  }
-	  
-	  // 辅助函数：星星闪烁
-		function hexToRgba(hex, alpha) {
-		  const bigint = parseInt(hex.replace("#", ""), 16)
-		  const r = (bigint >> 16) & 255
-		  const g = (bigint >> 8) & 255
-		  const b = bigint & 255
-		  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-		}
-
-	  // 辅助函数：缩短以太坊地址
-	  function shortenAddress(address) {
-		if (!address) return ""
-		return address.substring(0, 6) + "..." + address.substring(address.length - 4)
-	  }
-
-	  // 辅助函数：生成随机颜色
-	  function getRandomColor() {
-		const colors = [
-		  "#FF6B6B",
-		  "#4ECDC4",
-		  "#FFD166",
-		  "#06D6A0",
-		  "#118AB2",
-		  "#EF476F",
-		  "#FFC43D",
-		  "#1B9AAA",
-		  "#6A4C93",
-		  "#F72585",
-		]
-		return colors[Math.floor(Math.random() * colors.length)]
-	  }
-	})()
+        animate()
+      }
+    })()
   </script>
 </body>
 </html>
