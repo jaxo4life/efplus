@@ -22,6 +22,19 @@
 </head>
 <body>
   <canvas id="efp-social-graph-canvas"></canvas>
+  <div id="loading" style="
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-family: sans-serif;
+    font-size: 50px;
+    z-index: 10;
+    display: none;
+  ">
+    Loading...
+  </div>  
   <div id="error" style="display: none;"></div>
 
   <script>
@@ -46,6 +59,7 @@
       return
     }
 
+    document.getElementById("loading").style.display = "block" // 显示 loading
     fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=5000`)
       .then(res => {
         if (!res.ok) throw new Error("No Data")
@@ -54,8 +68,12 @@
       .then(data => {
         const followers = data.followers || []
         renderSocialGraph(canvas, address, followers, { ensName, avatarUrl })
+        // ✅ 数据加载成功，隐藏 loading
+        document.getElementById("loading").style.display = "none"		
       })
       .catch(err => {
+	    // ❌ 出错时隐藏 loading
+        document.getElementById("loading").style.display = "none"            
         showError("Failed to load：" + err.message)
       })
 
@@ -225,17 +243,16 @@
 			ctx.fill()
 
 			// ==== 👤 名字标签靠近中心才显示 ====
-			if (star.radius < 350) {
+			if (star.radius < 250) {
 			  ctx.font = "12px Arial"
-			  ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`
-			  ctx.textAlign = "center"
-			  ctx.fillText(star.follower.efp_list_nft_token_id, x, y - 10)
+			} else if (star.radius < 500) {
+			  ctx.font = "9px Arial"
 			} else {
 			  ctx.font = "6px Arial"
-			  ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`
-			  ctx.textAlign = "center"
-			  ctx.fillText(star.follower.efp_list_nft_token_id, x, y - 10)		  
 			}
+			ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`
+			ctx.textAlign = "center"
+			ctx.fillText(star.follower.efp_list_nft_token_id, x, y - 10)		  
 		  })
 
 		  // ==== 🪐 重绘中心节点 ====
