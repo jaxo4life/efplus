@@ -18,9 +18,39 @@
       font-family: sans-serif;
       padding: 20px;
     }
+    #search-container {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+    #search-container input {
+      padding: 8px 12px;
+      font-size: 14px;
+      width: 300px;
+      border-radius: 4px;
+      border: none;
+      outline: none;
+    }
+    #search-container button {
+      padding: 8px 16px;
+      margin-left: 8px;
+      font-size: 14px;
+      border-radius: 4px;
+      border: none;
+      background-color: #06D6A0;
+      color: black;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
+  <div id="search-container">
+    <input type="text" id="addressInput" placeholder="请输入以太坊地址（0x...）" />
+    <button onclick="startVisualization()">开始绘图</button>
+  </div>	
+	
   <canvas id="efp-social-graph-canvas"></canvas>
   <div id="error" style="display: none;"></div>
 
@@ -36,34 +66,44 @@
     window.addEventListener("resize", resizeCanvas)
     resizeCanvas()
 
-    const params = new URLSearchParams(location.search)
-    const address = params.get("address")
-    const ensName = params.get("ens")
-    const avatarUrl = params.get("avatar")
+    function startVisualization() {
+      const address = document.getElementById("addressInput").value.trim()
+      if (!address || !address.startsWith("0x")) {
+        showError("请输入有效的以太坊地址")
+        return
+      }
 
-    if (!address) {
-      showError("地址未提供")
-      return
+      document.getElementById("error").style.display = "none"
+
+      // 获取 ENS 和头像
+      fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/details`)
+        .then(res => {
+          if (!res.ok) throw new Error("ENS信息请求失败")
+          return res.json()
+        })
+        .then(details => {
+          const ensName = details?.ens?.name || ""
+          const avatarUrl = details?.ens?.avatar || ""
+
+          return fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=2000`)
+            .then(res => {
+              if (!res.ok) throw new Error("关注者数据请求失败")
+              return res.json()
+            })
+            .then(data => {
+              const followers = data.followers || []
+              renderSocialGraph(canvas, address, followers, { ensName, avatarUrl })
+            })
+        })
+        .catch(err => {
+          showError("图谱加载失败：" + err.message)
+        })
     }
-
-    fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=2000`)
-      .then(res => {
-        if (!res.ok) throw new Error("API 请求失败")
-        return res.json()
-      })
-      .then(data => {
-        const followers = data.followers || []
-        renderSocialGraph(canvas, address, followers, { ensName, avatarUrl })
-      })
-      .catch(err => {
-        showError("图谱加载失败：" + err.message)
-      })
 
     function showError(msg) {
       document.getElementById("error").innerText = msg
       document.getElementById("error").style.display = "block"
     }
-
 	  // 渲染社交图谱可视化
 	  function renderSocialGraph(canvas, centralAddress, followers, userInfo) {  
 		const ctx = canvas.getContext("2d")
