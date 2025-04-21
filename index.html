@@ -127,7 +127,7 @@
              return res.json()
            })
            .then(details => {
-             const ensName = details?.ens?.name || ""
+             const ensName = details?.ens?.name || shortenAddress(details?.address)
              const avatarUrl = details?.ens?.avatar || ""
  
              return fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=5000`)
