@@ -39,7 +39,7 @@
       font-weight: bold;
     }
     #error {
-      color: white;
+      color: red;
       font-family: sans-serif;
       padding: 20px;
       display: none;
@@ -110,7 +110,7 @@
         // 获取 ENS 名称与头像
         fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/details`)
           .then(res => {
-            if (!res.ok) throw new Error("ENS信息请求失败")
+            if (!res.ok) throw new Error("No Data")
             return res.json()
           })
           .then(details => {
@@ -119,7 +119,7 @@
 
             return fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=2000`)
               .then(res => {
-                if (!res.ok) throw new Error("关注者数据请求失败")
+                if (!res.ok) throw new Error("No Data")
                 return res.json()
               })
               .then(data => {
@@ -128,7 +128,7 @@
               })
           })
           .catch(err => {
-            showError("图谱加载失败：" + err.message)
+            showError("Failed to load：" + err.message)
           })
       }
 
