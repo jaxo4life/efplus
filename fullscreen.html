@@ -46,7 +46,7 @@
       return
     }
 
-    fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=2000`)
+    fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=5000`)
       .then(res => {
         if (!res.ok) throw new Error("No Data")
         return res.json()
@@ -164,11 +164,11 @@
 		const stars = []
 
 		// 流星轨道
-		followers.slice(0, 2000).forEach((follower, index) => {
+		followers.slice(0, 5000).forEach((follower, index) => {
 		  const angle = Math.random() * Math.PI * 2
 		  const minRadius = 120
-		  const radiusStep = 0.8 // 每个 follower 间隔多少距离
-		  const jitter = (Math.random() - 0.5) * 2 // [-1, +1] 范围抖动
+		  const radiusStep = 0.4 // 每个 follower 间隔多少距离
+		  const jitter = (Math.random() - 0.2) * 2 // [-0.4, +0.4] 范围抖动
 		  const radius = minRadius + index * radiusStep + jitter
 		  const angularSpeed = 0.002 + Math.random() * 0.003 // 控制旋转速度
 
