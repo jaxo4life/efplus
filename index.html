@@ -99,9 +99,9 @@
 
       // 挂载到 window 供按钮使用
       window.startVisualization = function () {
-        const address = document.getElementById("listIdInput").value.trim()
+        const address = document.getElementById("addressInput").value.trim()
         if (!/^\d+$/.test(address)) {
-          showError("请输入有效的 List ID（纯数字）")
+          showError("Please Input valid Listid")
           return
         }
 
