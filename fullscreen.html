@@ -14,7 +14,7 @@
       display: block;
     }
     #error {
-      color: white;
+      color: red;
       font-family: sans-serif;
       padding: 20px;
     }
@@ -42,13 +42,13 @@
     const avatarUrl = params.get("avatar")
 
     if (!address) {
-      showError("地址未提供")
+      showError("Invalid Listid")
       return
     }
 
     fetch(`https://api.ethfollow.xyz/api/v1/lists/${address}/followers?sort=followers&limit=2000`)
       .then(res => {
-        if (!res.ok) throw new Error("API 请求失败")
+        if (!res.ok) throw new Error("No Data")
         return res.json()
       })
       .then(data => {
@@ -56,7 +56,7 @@
         renderSocialGraph(canvas, address, followers, { ensName, avatarUrl })
       })
       .catch(err => {
-        showError("图谱加载失败：" + err.message)
+        showError("Failed to load：" + err.message)
       })
 
     function showError(msg) {
@@ -166,7 +166,7 @@
 		// 流星轨道
 		followers.slice(0, 2000).forEach((follower, index) => {
 		  const angle = Math.random() * Math.PI * 2
-		  const minRadius = 60
+		  const minRadius = 120
 		  const radiusStep = 0.8 // 每个 follower 间隔多少距离
 		  const jitter = (Math.random() - 0.5) * 2 // [-1, +1] 范围抖动
 		  const radius = minRadius + index * radiusStep + jitter
