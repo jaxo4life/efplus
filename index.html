@@ -166,7 +166,7 @@
 		// 流星轨道
 		followers.slice(0, 2000).forEach((follower, index) => {
 		  const angle = Math.random() * Math.PI * 2
-		  const minRadius = 60
+		  const minRadius = 120
 		  const radiusStep = 0.8 // 每个 follower 间隔多少距离
 		  const jitter = (Math.random() - 0.5) * 2 // [-1, +1] 范围抖动
 		  const radius = minRadius + index * radiusStep + jitter
